@@ -13,7 +13,7 @@ module.exports = {
         const {vetItens,
                userId} = req.body
 
-        if(!vetItens || vetItens.lenght === 0){
+        if(!vetItens || vetItens.length === 0){
             return res.status(404).send("Não há itens na sua venda")
         };
 
