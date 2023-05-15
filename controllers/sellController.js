@@ -13,18 +13,31 @@ module.exports = {
         const {vetItens,
                userId} = req.body
 
+        
+
         if(!vetItens || vetItens.length === 0){
             return res.status(404).send("Não há itens na sua venda")
         };
 
-        let totalVenda = 0
-        let id
+        const saida = await prisma.saida.create({
+            data:{
+                userId
+            }
+        })
 
+        let totalVenda = 0
+   
         for (const itemData of vetItens) {
+            console.log("Entrou no for")
             const {itemId,
                    quantidade } = itemData
 
             if(!itemId || !quantidade || quantidade == 0){
+
+                await prisma.saida.delete({
+                    where:{id: saida.id}
+                })
+
                 return res.status(400).send("Dados da venda estão ausentes")
             };
 
@@ -42,10 +55,10 @@ module.exports = {
                 return res.status(400).send(`Quantidade vendida do produto: ${produto.descricao} é maior que a quantidade em estoque!`)
             }
 
-
-            const saida = await prisma.saida.create({
+            await prisma.item.update({
+                where:{id:produto.id},
                 data:{
-                    userId
+                    estoque: (produto.estoque - quantidade)
                 }
             })
 
@@ -53,22 +66,24 @@ module.exports = {
 
             totalVenda += valorVendaItem
 
-            id = saida.id
-
-            await prisma.itensvenda.create({
+            await prisma.itensVenda.create({
                 data:{
                     itemId,
                     quantidade,
                     saidaId: saida.id
                 }
             });
+
+            console.log("Passou do create itemvenda")
         }
 
         await prisma.saida.update({
-            where:{ id },
+            where:{ id: saida.id },
             data:{
                 totalVenda: totalVenda
             }
         });
+
+        return res.status(201).send("Venda realizada: "+totalVenda)
     }
 }
